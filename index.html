@@ -14,12 +14,16 @@
                     <label id="addProductLabel">Add Product:</label>
                     <input id="addProductInput" type="text">
                     <button onclick="addProduct();" id="addProductButton">Add</button>
-                </form>    
+                </form>
+                <form >
+                    <label>Starting month:</label>
+                    <input type="month" id="startMonthInput">
+                    <label>Ending month:</label>
+                    <input type="month" id="endMonthInput">
+                    <button type="button" onclick="exportToExcel()">Export Excel</button>
+                </form>
             </span>
         </div>
-            <input type="file" id="excelFileInput" accept=".xlsx, .xls" />
-            <button onclick="importExcel()">Import Excel</button>
-            <button onclick="exportToExcel()">Export Excel</button>
 
                 <form class="shadow" id="comingForm">
                     <label class="cgLabel">Coming: </label>

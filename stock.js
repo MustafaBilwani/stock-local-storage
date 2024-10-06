@@ -22,60 +22,137 @@ var oldProduct = '';
 updateDate();
 loadFromLocalStorage();
 
+// productStockDetail ={
+//     pro1:[
+//         {price: 10, coming: 50, date: '11-11-2011'}
+//         {price: 10, coming: 50, date: '11-11-2011'}
+//         {price: 10, coming: 50, date: '11-11-2011'}
+//         {price: 10, coming: 50, date: '11-11-2011'}
+//     ],
+//     pro2:[
+//         {price: 10, coming: 50, date: '11-11-2011'}
+//         {price: 10, coming: 50, date: '11-11-2011'}
+//         {price: 10, coming: 50, date: '11-11-2011'}
+//         {price: 10, coming: 50, date: '11-11-2011'}
+//     ],
+//     pro3:[
+//         {product: pro3, price: 10, coming: 50, date: '11-11-2011'}
+//         {product: pro3, price: 10, coming: 50, date: '11-11-2011'}
+//         {product: pro3, price: 10, coming: 50, date: '11-11-2011'}
+//         {product: pro3, price: 10, coming: 50, date: '11-11-2011'}
+//     ]
+// }
+
+
 function exportToExcel() {
-    var workbook = XLSX.utils.book_new();
+    startMonth = document.getElementById('startMonthInput').value;
+    endMonth = document.getElementById('endMonthInput').value;
+    startMonth = new Date (startMonth).getMonth()
+    endMonth = new Date (endMonth).getMonth()
+    if(startMonth == '' || endMonth ==''){
+        alert('select month')
+        return false;
+    }
 
-    // Convert productStockDetail to an array of arrays
-    var sheetData = [['Product Name', 'Stock', 'Price']];
-    products.forEach(product => {
-        var stockDetails = productCurrentStockDetail[product];
-        stockDetails.forEach(detail => {
-            sheetData.push([product, detail.quantity, detail.price]);
+    // var processedData = [];
+
+    // products.forEach(currentProduct => {
+    //     productStockDetail[currentProduct].forEach (stockDetail => {
+    //         processedData.push({
+    //             product: currentProduct,
+    //             ...stockDetail
+    //         })
+    //     })
+    // })    
+    
+    // const worksheet = XLSX.utils.json_to_sheet(processedData);
+    // const workbook = XLSX.utils.book_new();
+    // XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+    // XLSX.writeFile(workbook, "exported_data.xlsx");
+
+    const workbook2 = XLSX.utils.book_new();
+    let counter = 0;
+
+    products.forEach(currentProduct => {
+        counter += 1;
+
+        // Create an array for the sheet
+        const productDataWithHeader = [];
+
+        // Add the first row (product name and stock)
+        productDataWithHeader.push({
+            A: currentProduct,
+            B: '',
+            C: 'Stock:',
+            D: productStockTotal[currentProduct],
+            E: '',
+            F: '',
+            G: ''
         });
+
+        // Add the second row (column headers)
+        productDataWithHeader.push({
+            A: 'coming',
+            B: 'price',
+            C: 'note',
+            D: 'date',
+            E: 'going',
+            F: 'purchasing',
+            G: ''
+        });
+
+        // Add product data
+        productStockDetail[currentProduct].forEach(item => {
+            debugger;
+            const currentDate = new Date(item.date)
+            if(currentDate.getMonth() >= startMonth && currentDate.getMonth() <= endMonth ){
+                
+                productDataWithHeader.push({
+                    A: item.coming || '',
+                    B: item.price || '',
+                    C: item.note || '',
+                    D: item.date || '',
+                    E: item.going || '',
+                    F: item.purchasingAmount || '',
+                    G: ''
+                });
+            }
+
+        });
+
+        // Convert to sheet using json_to_sheet
+        const productSheet = XLSX.utils.json_to_sheet(productDataWithHeader, { skipHeader: true });
+
+        // Append the sheet to the workbook
+        XLSX.utils.book_append_sheet(workbook2, productSheet, 'sheet' + counter);
     });
 
-    var worksheet = XLSX.utils.aoa_to_sheet(sheetData);
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Stock");
+    // Write the workbook to a file
+    XLSX.writeFile(workbook2, 'productStockDetail.xlsx');
 
-    // Create Excel file and trigger download
-    XLSX.writeFile(workbook, 'stock_data.xlsx');
+    selectCurrentMonth();
+
+
+    // const workbook2 = XLSX.utils.book_new();
+    // products.forEach(currentProduct => {
+
+    //     const productSheet = XLSX.utils.json_to_sheet(productStockDetail[currentProduct]);
+    //     XLSX.utils.book_append_sheet(workbook2, productSheet, currentProduct );
+    // })
+    // XLSX.writeFile(workbook2, 'productStockDetail.xlsx');
 }
-
-
-function importExcel() {
-    var fileInput = document.getElementById('excelFileInput');
-    var file = fileInput.files[0];
-    var reader = new FileReader();
-
-    reader.onload = function(e) {
-        var data = new Uint8Array(e.target.result);
-        var workbook = XLSX.read(data, {type: 'array'});
-
-        // Assuming the data is in the first sheet
-        var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        var sheetData = XLSX.utils.sheet_to_json(firstSheet, {header: 1}); // Convert sheet to JSON array
-
-        processImportedData(sheetData);
-    };
-
-    reader.readAsArrayBuffer(file);
+selectCurrentMonth();
+function selectCurrentMonth(){
+    const currentDate = new Date();
+  
+    // Extract the year and month, adjusting the month to be in two-digit format (e.g., '01' for January)
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
+    
+    // Set the default value to the current year and month
+    document.getElementById('endMonthInput').value = `${currentYear}-${currentMonth}`;
+    document.getElementById('startMonthInput').value = `${currentYear}-${currentMonth}`;
 }
-
-function processImportedData(sheetData) {
-    sheetData.forEach(row => {
-        var [productName, stock, price] = row;
-        // Assuming the columns are Product Name, Stock, Price
-        if (!products.includes(productName)) {
-            products.push(productName);
-            productStockTotal[productName] = parseInt(stock);
-            productCurrentStockDetail[productName] = [{quantity: parseInt(stock), price: parseFloat(price)}];
-            productStockDetail[productName] = [];
-            updateUIAfterAddingProduct(productName);
-        }
-    });
-    saveToLocalStorage(); // Save imported data
-}
-
 
 
 function deleteProduct(productName) {
