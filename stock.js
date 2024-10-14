@@ -22,27 +22,6 @@ var oldProduct = '';
 updateDate();
 loadFromLocalStorage();
 
-// productStockDetail ={
-//     pro1:[
-//         {price: 10, coming: 50, date: '11-11-2011'}
-//         {price: 10, coming: 50, date: '11-11-2011'}
-//         {price: 10, coming: 50, date: '11-11-2011'}
-//         {price: 10, coming: 50, date: '11-11-2011'}
-//     ],
-//     pro2:[
-//         {price: 10, coming: 50, date: '11-11-2011'}
-//         {price: 10, coming: 50, date: '11-11-2011'}
-//         {price: 10, coming: 50, date: '11-11-2011'}
-//         {price: 10, coming: 50, date: '11-11-2011'}
-//     ],
-//     pro3:[
-//         {product: pro3, price: 10, coming: 50, date: '11-11-2011'}
-//         {product: pro3, price: 10, coming: 50, date: '11-11-2011'}
-//         {product: pro3, price: 10, coming: 50, date: '11-11-2011'}
-//         {product: pro3, price: 10, coming: 50, date: '11-11-2011'}
-//     ]
-// }
-
 
 function exportToExcel() {
     startMonth = document.getElementById('startMonthInput').value;
@@ -147,9 +126,8 @@ function selectCurrentMonth(){
   
     // Extract the year and month, adjusting the month to be in two-digit format (e.g., '01' for January)
     const currentYear = currentDate.getFullYear();
-    const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
+    const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0'); // +1 to get current month beacuse Months are zero-indexed
     
-    // Set the default value to the current year and month
     document.getElementById('endMonthInput').value = `${currentYear}-${currentMonth}`;
     document.getElementById('startMonthInput').value = `${currentYear}-${currentMonth}`;
 }
@@ -182,7 +160,8 @@ function loadFromLocalStorage() {
             if (productStockDetail[product]) {
                 productStockDetail[product].forEach(detail => {
                     const stockTable = document.getElementById(`${product}StockTable`);
-                    stockTable.innerHTML += `<tr>
+                    stockTable.innerHTML += 
+                    `<tr>
                         <td>${detail.date || ''}</td>
                         <td>${detail.note || ''}</td>
                         <td>${detail.coming || ''}</td>
@@ -265,18 +244,7 @@ function coming() {
     }
 
     index += 1;
-    var productStockTable = document.getElementById(comingProduct.value + `StockTable`);
     var qty = comingQty.value;
-    itemStockTableHtml = 
-        `<tr>
-            <td>${comingDate.value}</td>
-            <td>${comingNote.value}</td>
-            <td>${qty}</td>
-            <td></td>
-            <td>${comingPrice.value}</td>
-            <td></td>
-        </tr>`;
-    productStockTable.innerHTML += itemStockTableHtml;
 
     productStockTotal[comingProduct.value] += parseInt(qty);
     productStockDetail[comingProduct.value].push({
@@ -291,6 +259,8 @@ function coming() {
     });
 
     // Save updated data to local storage
+    productStockDetail[comingProduct.value].sort(function(a, b){return new Date(a.date) - new Date(b.date)});
+    renderProductDetailTable(comingProduct.value);
     saveToLocalStorage(); // Save updated data
     document.getElementById('comingForm').reset();
     renderStockTotal();
@@ -298,7 +268,6 @@ function coming() {
 }
 
 function going() {
-    debugger;
     updateProduct = goingProduct.value;
     var isDecimal = goingQty.value != Math.trunc(goingQty.value);
     
@@ -315,7 +284,6 @@ function going() {
         return false; // Ensure you have enough stock before processing the going transaction.
     }
 
-    var productStockTable = document.getElementById(goingProduct.value + `StockTable`);
     var goingQuantity = parseInt(goingQty.value);
 
     while (goingQuantity > 0 && productCurrentStockDetail[goingProduct.value].length > 0) {
@@ -326,16 +294,6 @@ function going() {
         let availableStock = stockDetail.quantity;
         let deductedQuantity = Math.min(availableStock, goingQuantity);
 
-        // Update the HTML table
-        itemStockTableHtml = `<tr>
-            <td>${goingDate.value}</td>
-            <td>${goingNote.value}</td>
-            <td></td>
-            <td>${deductedQuantity}</td>
-            <td>${goingPrice.value}</td>
-            <td>${stockDetail.price}</td>
-        </tr>`;
-        productStockTable.innerHTML += itemStockTableHtml;
 
         // Deduct the stock
         productStockTotal[goingProduct.value] -= deductedQuantity;
@@ -356,11 +314,29 @@ function going() {
         }
     }
 
-    // Save updated data to local storage
-    saveToLocalStorage(); 
+    productStockDetail[goingProduct.value].sort(function(a, b){return new Date(a.date) - new Date(b.date)}); // sort entries according to date
+    renderProductDetailTable(goingProduct.value); // render table after sorting
+    
+    saveToLocalStorage(); // Save updated data to local storage
     document.getElementById('goingForm').reset();
     renderStockTotal();
     updateDate();
+}
+
+function renderProductDetailTable(product){
+    const stockTable = document.getElementById(`${product}StockTable`);
+    stockTable.innerHTML = ''
+    productStockDetail[product].forEach(detail => {
+        stockTable.innerHTML += 
+        `<tr>
+            <td>${detail.date || ''}</td>
+            <td>${detail.note || ''}</td>
+            <td>${detail.coming || ''}</td>
+            <td>${detail.going || ''}</td>
+            <td>${detail.price || ''}</td>
+            <td>${detail.purchasingAmount || ''}</td>
+        </tr>`;
+    });
 }
 
 function renderStockTotal() {
